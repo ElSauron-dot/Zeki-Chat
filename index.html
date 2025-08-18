@@ -1,82 +1,91 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-  <meta charset="UTF-8" />
-  <title>NeoChat🎮</title>
-  <style>
-    body {
-      font-family: "Luckiest Guy", cursive;
-      background: #111;
-      color: white;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 100vh;
-    }
-    #chatbox {
-      width: 80%;
-      height: 60%;
-      background: #222;
-      border-radius: 12px;
-      padding: 10px;
-      overflow-y: auto;
-    }
-    #userInput {
-      width: 70%;
-      padding: 10px;
-      border-radius: 8px;
-      border: none;
-    }
-    #sendBtn {
-      padding: 10px 20px;
-      margin-left: 5px;
-      border: none;
-      border-radius: 8px;
-      background: #0f0;
-      cursor: pointer;
-      font-weight: bold;
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chat Zeki 🧠</title>
+<style>
+  body { font-family: monospace; background:#1e1e1e; color:#fff; margin:0; padding:0; display:flex; flex-direction:column; height:100vh;}
+  #chat { flex:1; padding:10px; overflow-y:auto; }
+  #inputArea { display:flex; padding:10px; background:#2e2e2e;}
+  #inputArea input[type="text"] { flex:1; padding:8px; font-size:16px; }
+  #inputArea button { padding:8px 12px; margin-left:5px; font-size:16px; }
+  #inputArea input[type="file"] { margin-left:5px; }
+  .message { margin:5px 0; }
+  .user { color:#00f; }
+  .bot { color:#0f0; }
+</style>
 </head>
 <body>
-  <h1>NeoChat🎮</h1>
-  <div id="chatbox"></div>
-  <div>
-    <input id="userInput" type="text" placeholder="Mesaj yaz..." />
-    <button id="sendBtn">Gönder</button>
-  </div>
 
-  <script type="module">
-    import { pipeline } from "https://cdn.jsdelivr.net/npm/@xenova/transformers";
+<div id="chat"></div>
 
-    let generator;
-    async function loadModel() {
-      generator = await pipeline("text-generation", "Xenova/distilgpt2");
-      addMessage("🤖", "Model yüklendi! Sohbete başlayabilirsin.");
+<div id="inputArea">
+  <input type="text" id="userInput" placeholder="Mesajınızı yazın...">
+  <input type="file" id="imageInput" accept="image/*">
+  <button onclick="sendMessage()">Gönder</button>
+</div>
+
+<script>
+const chat = document.getElementById('chat');
+
+function appendMessage(sender, text) {
+  const div = document.createElement('div');
+  div.className = 'message ' + sender;
+  chat.appendChild(div);
+
+  let i = 0;
+  function typeWriter() {
+    if (i < text.length) {
+      div.innerHTML += text.charAt(i);
+      i++;
+      setTimeout(typeWriter, 20);
+      chat.scrollTop = chat.scrollHeight;
     }
+  }
+  typeWriter();
+}
 
-    function addMessage(sender, text) {
-      const chatbox = document.getElementById("chatbox");
-      const msg = document.createElement("div");
-      msg.innerHTML = `<b>${sender}:</b> ${text}`;
-      chatbox.appendChild(msg);
-      chatbox.scrollTop = chatbox.scrollHeight;
+// Fake API call (simülasyon)
+// Bunu gerçek API ile değiştirebilirsin (Python veya JS fetch ile)
+async function askBot(question, imageBase64=null) {
+  // Örnek yanıt
+  if(imageBase64) {
+    return "Bu bir görsel! Chat Zeki 🧠 görseli analiz ediyor...";
+  }
+  return "Chat Zeki 🧠: " + question.split("").reverse().join(""); // sadece örnek
+}
+
+async function sendMessage() {
+  const input = document.getElementById('userInput');
+  const fileInput = document.getElementById('imageInput');
+  const text = input.value.trim();
+
+  if(!text && !fileInput.files[0]) return;
+
+  if(text){
+    appendMessage('user', text);
+  }
+
+  let imageBase64 = null;
+  if(fileInput.files[0]){
+    const file = fileInput.files[0];
+    const reader = new FileReader();
+    reader.onload = async function(e){
+      imageBase64 = e.target.result.split(',')[1];
+      const botReply = await askBot(text, imageBase64);
+      appendMessage('bot', botReply);
     }
+    reader.readAsDataURL(file);
+  } else {
+    const botReply = await askBot(text);
+    appendMessage('bot', botReply);
+  }
 
-    document.getElementById("sendBtn").onclick = async () => {
-      const input = document.getElementById("userInput");
-      const userText = input.value;
-      if (!userText.trim()) return;
+  input.value = '';
+  fileInput.value = '';
+}
+</script>
 
-      addMessage("👤", userText);
-      input.value = "";
-
-      const output = await generator(userText, { max_new_tokens: 50 });
-      addMessage("🤖", output[0].generated_text);
-    };
-
-    loadModel();
-  </script>
 </body>
 </html>
