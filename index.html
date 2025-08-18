@@ -28,6 +28,7 @@
 
 <script>
 const chat = document.getElementById('chat');
+const BACKEND_URL = "https://chatserver-qmvx.onrender.com/chat"; // Render URL
 
 function appendMessage(sender, text) {
   const div = document.createElement('div');
@@ -44,16 +45,6 @@ function appendMessage(sender, text) {
     }
   }
   typeWriter();
-}
-
-// Fake API call (simülasyon)
-// Bunu gerçek API ile değiştirebilirsin (Python veya JS fetch ile)
-async function askBot(question, imageBase64=null) {
-  // Örnek yanıt
-  if(imageBase64) {
-    return "Bu bir görsel! Chat Zeki 🧠 görseli analiz ediyor...";
-  }
-  return "Chat Zeki 🧠: " + question.split("").reverse().join(""); // sadece örnek
 }
 
 async function sendMessage() {
@@ -73,13 +64,31 @@ async function sendMessage() {
     const reader = new FileReader();
     reader.onload = async function(e){
       imageBase64 = e.target.result.split(',')[1];
-      const botReply = await askBot(text, imageBase64);
-      appendMessage('bot', botReply);
+      try{
+        const res = await fetch(BACKEND_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ question: text, image_base64: imageBase64 })
+        });
+        const data = await res.json();
+        appendMessage('bot', data.answer);
+      }catch(err){
+        appendMessage('bot', "Hata oluştu: " + err);
+      }
     }
     reader.readAsDataURL(file);
   } else {
-    const botReply = await askBot(text);
-    appendMessage('bot', botReply);
+    try{
+      const res = await fetch(BACKEND_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question: text })
+      });
+      const data = await res.json();
+      appendMessage('bot', data.answer);
+    }catch(err){
+      appendMessage('bot', "Hata oluştu: " + err);
+    }
   }
 
   input.value = '';
