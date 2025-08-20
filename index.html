@@ -2,7 +2,7 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <title>ChatZeki</title>
+    <title>Chat Zek-i</title>
     <style>
         body { font-family: Arial; background: #f0f0f0; display: flex; justify-content: center; padding-top: 50px; }
         #chat-container { width: 400px; background: #fff; padding: 10px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.2);}
@@ -51,9 +51,9 @@
                     body: JSON.stringify({ message })
                 });
                 const data = await res.json();
-                addMessage("ChatZeki", data.reply);
+                addMessage("Chat Zek-i", data.reply);
             } catch(e) {
-                addMessage("ChatZeki", "Hata oluştu: " + e.message);
+                addMessage("Chat Zek-i", "Hata oluştu: " + e.message);
             }
         }
     </script>
