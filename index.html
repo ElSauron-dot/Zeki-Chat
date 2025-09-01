@@ -43,11 +43,15 @@ function appendMessage(text, cls) {
 
 function typewriter(element, text) {
   stopTyping = false;
-  element.textContent = "";
+  element.innerHTML = "";  // HTML kullanacağız ki <br> çalışsın
   let i = 0;
   function step() {
-    if(stopTyping || i >= text.length) return;
-    element.textContent += text[i];
+    if (stopTyping || i >= text.length) return;
+    if (text[i] === "\n") {
+      element.innerHTML += "<br>";  // satır atla
+    } else {
+      element.innerHTML += text[i];
+    }
     chatbox.scrollTop = chatbox.scrollHeight;
     i++;
     setTimeout(step, 20);
