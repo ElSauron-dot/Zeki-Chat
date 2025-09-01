@@ -1,147 +1,102 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-  <meta charset="UTF-8">
-  <title>Chat Zek-i 🤖</title>
-  <style>
-    body {
-      background-color: black;
-      color: white;
-      font-family: Consolas, monospace;
-      margin: 0;
-      display: flex;
-      flex-direction: column;
-      height: 100vh;
-    }
-    #chatbox {
-      flex: 1;
-      padding: 10px;
-      overflow-y: auto;
-      white-space: pre-wrap;
-    }
-    .user { color: cyan; }
-    .bot { color: lime; }
-    #input-area {
-      display: flex;
-      padding: 10px;
-      background-color: black;
-    }
-    #entry {
-      flex: 1;
-      background: black;
-      color: white;
-      border: 1px solid gray;
-      padding: 5px;
-      font-family: Consolas, monospace;
-    }
-    #send-button {
-      margin-left: 5px;
-      padding: 5px 15px;
-      font-family: Consolas, monospace;
-      background: #333;
-      color: white;
-      border: none;
-      cursor: pointer;
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chat Zek-i</title>
+<style>
+  body { background: black; color: white; font-family: Consolas, monospace; margin:0; display:flex; flex-direction:column; height:100vh;}
+  #chatbox { flex:1; padding:10px; overflow-y:auto; border:none; background:black;}
+  .user { color: cyan; }
+  .bot { color: lime; }
+  #inputArea { display:flex; padding:10px; background:black; }
+  #entry { flex:1; padding:5px; font-size:16px; background:black; color:white; border:1px solid gray; }
+  #send { margin-left:5px; padding:5px 10px; font-size:16px; background:gray; color:white; border:none; cursor:pointer; }
+</style>
 </head>
 <body>
-  <div id="chatbox"></div>
-  <div id="input-area">
-    <input id="entry" type="text" placeholder="Mesaj yaz..." />
-    <button id="send-button">Gönder</button>
-  </div>
 
-  <script>
-    const API_KEY = "1270e99b-45ef-4c65-af83-eb683dbed9dc";
-    const API_URL = "https://api.sambanova.ai/v1/chat/completions";
-    const MODEL = "Meta-Llama-3.1-8B-Instruct";
+<div id="chatbox"></div>
 
-    const chatbox = document.getElementById("chatbox");
-    const entry = document.getElementById("entry");
-    const sendButton = document.getElementById("send-button");
+<div id="inputArea">
+  <input type="text" id="entry" placeholder="Mesajınızı yazın..." />
+  <button id="send">Gönder</button>
+</div>
 
-    let chatHistory = [];
-    let stopTyping = false;
+<script>
+const API_KEY = "1270e99b-45ef-4c65-af83-eb683dbed9dc";
+const API_URL = "https://api.sambanova.ai/v1/chat/completions";
+const MODEL = "Meta-Llama-3.1-8B-Instruct";
+let chat_history = [];
+let stopTyping = false;
 
-    // Typewriter efekti
-    async function typewriter(text, cssClass) {
-      stopTyping = false;
-      const span = document.createElement("div");
-      span.className = cssClass;
-      chatbox.appendChild(span);
+const chatbox = document.getElementById("chatbox");
+const entry = document.getElementById("entry");
+const sendBtn = document.getElementById("send");
 
-      for (let char of text) {
-        if (stopTyping) break;
-        span.textContent += char;
-        chatbox.scrollTop = chatbox.scrollHeight;
-        await new Promise(r => setTimeout(r, 20));
-      }
-    }
+function appendMessage(text, cls) {
+  const div = document.createElement("div");
+  div.className = cls;
+  chatbox.appendChild(div);
+  typewriter(div, text);
+}
 
-    // API’den cevap çek
-    async function generateResponse(userMsg) {
-      const messages = [{role: "system", content: "Sen akıllı bir yardımcı botsun."}];
-      chatHistory.forEach(([role, msg]) => {
-        messages.push({role: role === "user" ? "user" : "assistant", content: msg});
-      });
-      messages.push({role: "user", content: userMsg});
+function typewriter(element, text) {
+  stopTyping = false;
+  element.textContent = "";
+  let i = 0;
+  function step() {
+    if(stopTyping || i >= text.length) return;
+    element.textContent += text[i];
+    chatbox.scrollTop = chatbox.scrollHeight;
+    i++;
+    setTimeout(step, 20);
+  }
+  step();
+}
 
-      try {
-        const res = await fetch(API_URL, {
-          method: "POST",
-          headers: {
-            "Authorization": `Bearer ${API_KEY}`,
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            model: MODEL,
-            messages: messages
-          })
-        });
-        const data = await res.json();
-        return data.choices[0].message.content;
-      } catch (err) {
-        return "[API HATASI] " + err;
-      }
-    }
+async function generateResponse(userMsg) {
+  const messages = [{role:"system", content:"Sen akıllı bir yardımcı botsun."}];
+  chat_history.forEach(([role, msg]) => messages.push({role: role==="user"?"user":"assistant", content: msg}));
+  messages.push({role:"user", content:userMsg});
 
-    // Mesaj gönder
-    async function sendMessage() {
-      const userMsg = entry.value.trim();
-      if (!userMsg) return;
-      chatHistory.push(["user", userMsg]);
-      entry.value = "";
-
-      typewriter("Kullanıcı: " + userMsg, "user");
-
-      sendButton.textContent = "⏹ Durdur";
-      sendButton.onclick = stopTypingFunc;
-
-      const response = await generateResponse(userMsg);
-      chatHistory.push(["bot", response]);
-      await typewriter("Bot: " + response, "bot");
-
-      sendButton.textContent = "Gönder";
-      sendButton.onclick = sendMessage;
-    }
-
-    // Bot yazmayı durdur
-    function stopTypingFunc() {
-      stopTyping = true;
-      sendButton.textContent = "Gönder";
-      sendButton.onclick = sendMessage;
-    }
-
-    // Enter ile mesaj gönderme
-    entry.addEventListener("keydown", e => {
-      if (e.key === "Enter") {
-        e.preventDefault();
-        sendMessage();
-      }
+  try {
+    const res = await fetch(API_URL, {
+      method:"POST",
+      headers:{
+        "Authorization": `Bearer ${API_KEY}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({model: MODEL, messages})
     });
+    const data = await res.json();
+    return data.choices[0].message.content;
+  } catch(e) {
+    return `[API HATASI] ${e}`;
+  }
+}
 
-    sendButton.onclick = sendMessage;
-  </script>
+async function sendMessage() {
+  const userMsg = entry.value.trim();
+  if(!userMsg) return;
+  chat_history.push(["user", userMsg]);
+  entry.value = "";
+  appendMessage("Kullanıcı: " + userMsg, "user");
+
+  sendBtn.textContent = "⏹ Durdur";
+  sendBtn.onclick = () => { stopTyping = true; sendBtn.textContent="Gönder"; sendBtn.onclick=sendMessage; };
+
+  const botMsg = await generateResponse(userMsg);
+  chat_history.push(["bot", botMsg]);
+  appendMessage("Bot: " + botMsg, "bot");
+
+  sendBtn.textContent = "Gönder";
+  sendBtn.onclick = sendMessage;
+}
+
+sendBtn.onclick = sendMessage;
+entry.addEventListener("keypress", e => { if(e.key==="Enter") sendMessage(); });
+</script>
+
 </body>
 </html>
